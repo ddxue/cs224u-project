@@ -25,6 +25,10 @@ LABEL_TO_INT = {
 	'true': 5
 }
 
+def replace_nans(x, replacement=0):
+	nans = np.isnan(x)
+	x[nans] = replacement
+
 # Loads (X, y) from filename
 def load_raw_data(file_name=TEST_FILENAME):
 	data = pd.read_csv(file_name, sep='\t', header=None).to_numpy()
@@ -106,13 +110,14 @@ def load_data_from_file(file_name, model):
 	print("Done loading data...")
 	return X, y
 
-def load_all_data(model, cache=True, normalize=False):
+def load_all_data(model, cache=True, normalize=True):
 	train_X, train_y = get_np_data('train')
 	mean_X, _ = get_np_data('mean')
 	std_X, _ = get_np_data('std')
 	if train_X is None or train_y is None or mean_X is None or std_X is None:
 		train_X, train_y = load_data_from_file(TRAIN_FILENAME, model)
 		train_X = np.array(train_X, dtype=np.float32)
+		replace_nans(train_X)
 		mean_X = np.mean(train_X, axis=0)
 		std_X = np.std(train_X, axis=0)
 		if cache:
@@ -129,6 +134,7 @@ def load_all_data(model, cache=True, normalize=False):
 	if val_X is None or val_y is None:
 		val_X, val_y = load_data_from_file(VALID_FILENAME, model)
 		val_X = np.array(val_X, dtype=np.float32)
+		replace_nans(val_X)
 		if cache:
 			np_val_X_file_name, np_val_y_file_name = get_np_filenames('val')
 			np.save(np_val_X_file_name, val_X)
@@ -139,6 +145,7 @@ def load_all_data(model, cache=True, normalize=False):
 	if test_X is None or test_y is None:
 		test_X, test_y = load_data_from_file(TEST_FILENAME, model)
 		test_X = np.array(test_X, dtype=np.float32)
+		replace_nans(test_X)
 		if cache:
 			np_test_X_file_name, np_test_y_file_name = get_np_filenames('test')
 			np.save(np_test_X_file_name, test_X)
@@ -164,10 +171,8 @@ if __name__ == '__main__':
 	print(train_X.shape)
 	print(train_y.shape)
 	print("Fitting Model...")
-	print(np.max(train_X))
 
-	train_nans = np.isnan(train_X)
-	train_X[train_nans] = 0
 	log_reg = LogisticRegression().fit(train_X, train_y)
 	val_yhat = log_reg.predict(val_X)
+	print("Evaluating..")
 	print(evaluate(val_y, val_yhat))
