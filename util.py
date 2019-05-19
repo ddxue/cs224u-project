@@ -5,10 +5,10 @@ from sentence2vec import Sentence2Vec
 from sklearn.linear_model import LogisticRegression
 
 DATA_HOME = 'Fake_News_Detection/liar_dataset'
+MODEL_FILENAME = './job_titles.model'
 TEST_FILENAME = os.path.join(DATA_HOME, 'test.tsv')
 TRAIN_FILENAME = os.path.join(DATA_HOME, 'train.tsv')
 VALID_FILENAME = os.path.join(DATA_HOME, 'valid.tsv')
-MODEL_FILENAME = './job_titles.model'
 
 BINARY = '2-Way'
 HEXARY = '6-Way'
@@ -80,15 +80,72 @@ def get_batch(X, y, batch_size=1, replace=True):
 	y_batch = y[indices]
 	return X_batch, y_batch
 
+
+def get_np_filenames(dataset):
+	np_X_file_name = os.path.join(DATA_HOME, dataset + '_X.npy')
+	np_y_file_name = os.path.join(DATA_HOME, dataset + '_y.npy')
+	return np_X_file_name, np_y_file_name
+
+def get_np_data(dataset):
+	np_X_file_name, np_y_file_name = get_np_filenames(dataset)
+	X, y = None, None
+	if os.path.isfile(np_X_file_name):
+		X = np.load(np_X_file_name)
+	if os.path.isfile(np_y_file_name):
+		y = np.load(np_y_file_name)
+	return X, y
+
 # Load data
-def load_data(model, file_name=TEST_FILENAME):
+def load_data_from_file(file_name, model):
 	print("Loading Raw Data...")
 	raw_X, y = load_raw_data(file_name)
 	print("Converting Sentences To Vectors...")
 	X = raw_to_numeric_features(raw_X, model)
 	print("Converting Labels...")
 	y = convert_labels(y, MODE)
+	print("Done loading data...")
 	return X, y
+
+def load_all_data(model, cache=True, normalize=False):
+	train_X, train_y = get_np_data('train')
+	mean_X, _ = get_np_data('mean')
+	std_X, _ = get_np_data('std')
+	if train_X is None or train_y is None or mean_X is None or std_X is None:
+		train_X, train_y = load_data_from_file(TRAIN_FILENAME, model)
+		train_X = np.array(train_X, dtype=np.float32)
+		mean_X = np.mean(train_X, axis=0)
+		std_X = np.std(train_X, axis=0)
+		if cache:
+			np_train_X_file_name, np_train_y_file_name = get_np_filenames('train')
+			np_mean_X_file_name, _ = get_np_filenames('mean')
+			np_std_X_file_name, _ = get_np_filenames('std')
+			np.save(np_train_X_file_name, train_X)
+			np.save(np_train_y_file_name, train_y)
+			np.save(np_mean_X_file_name, mean_X)
+			np.save(np_std_X_file_name, std_X)
+	if normalize:
+		train_X = (train_X - mean_X) / std_X
+	val_X, val_y = get_np_data('val')
+	if val_X is None or val_y is None:
+		val_X, val_y = load_data_from_file(VALID_FILENAME, model)
+		val_X = np.array(val_X, dtype=np.float32)
+		if cache:
+			np_val_X_file_name, np_val_y_file_name = get_np_filenames('val')
+			np.save(np_val_X_file_name, val_X)
+			np.save(np_val_y_file_name, val_y)
+	if normalize:
+		val_X = (val_X - mean_X) / std_X
+	test_X, test_y = get_np_data('test')
+	if test_X is None or test_y is None:
+		test_X, test_y = load_data_from_file(TEST_FILENAME, model)
+		test_X = np.array(test_X, dtype=np.float32)
+		if cache:
+			np_test_X_file_name, np_test_y_file_name = get_np_filenames('test')
+			np.save(np_test_X_file_name, test_X)
+			np.save(np_test_y_file_name, test_y)
+	if normalize:
+		test_X = (test_X - mean_X) / std_X
+	return train_X, train_y, val_X, val_y, test_X, test_y
 
 # TODO: what metric?
 # Return MSE for regression, accuracy for classification
@@ -103,13 +160,14 @@ def evaluate(y, yhat, mode=MODE):
 
 if __name__ == '__main__':
 	model = Sentence2Vec(MODEL_FILENAME)
-	train_X, train_y = load_data(model, file_name=VALID_FILENAME)
+	train_X, train_y, val_X, val_y, test_X, test_y = load_all_data(model)
 	print(train_X.shape)
 	print(train_y.shape)
 	print("Fitting Model...")
+	print(np.max(train_X))
+
+	train_nans = np.isnan(train_X)
+	train_X[train_nans] = 0
 	log_reg = LogisticRegression().fit(train_X, train_y)
-	val_X, val_y = load_data(model, file_name=TEST_FILENAME)
 	val_yhat = log_reg.predict(val_X)
 	print(evaluate(val_y, val_yhat))
-
-
