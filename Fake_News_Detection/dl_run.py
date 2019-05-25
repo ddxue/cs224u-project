@@ -15,10 +15,50 @@ from keras.callbacks import TensorBoard, CSVLogger
 #  Constants            
 ###########################
 
-COLUMNS_NAMES = ["id", "label", "statement", "subject", "speaker", "job", "state", "party",  # columns 1-8
-                "barely-true-counts", "false-counts", "half-true-counts", "mostly-true-counts", "pants-fire-counts", # columns 9-13 (counts)
+COLUMNS_NAMES = ["id", 
+                "label", "statement", "subject", "speaker", "job", "state", "party",  # columns 1-8
+                "barely-true-counts", "false-counts", "half-true-counts", "mostly-true-counts", "pants-fire-counts",  # columns 9-13 (counts)
                 "venue"]  # names of the columns in the tsv files
 
+# Map output label to six classes.
+LABEL_LIST_REVERSE = ["pants-fire", "false", "barely-true", "half-true", "mostly-true", "true"]
+LABEL_DICT = {"pants-fire":0, "false":0, "barely-true":0, "half-true":1, "mostly-true":1, "true":1}
+SPEAKERS_LIST = ["barack-obama", "donald-trump", "hillary-clinton", "mitt-romney", 
+            "scott-walker", "john-mccain", "rick-perry", "chain-email", 
+            "marco-rubio", "rick-scott", "ted-cruz", "bernie-s", "chris-christie", 
+            "facebook-posts", "charlie-crist", "newt-gingrich", "jeb-bush", 
+            "joe-biden", "blog-posting","paul-ryan"]
+JOB_LIST = ["president", "u.s. senator", "governor", "president-elect", "presidential candidate", 
+            "u.s. representative", "state senator", "attorney", "state representative", "congress"]
+JOB_DICT = {"president":0, "u.s. senator":1, "governor":2, "president-elect":3, "presidential candidate":4, 
+            "u.s. representative":5, "state senator":6, "attorney":7, "state representative":8, "congress":9}
+PARTY_DICT = {"republican":0,"democrat":1,"none":2,"organization":3,"newsmaker":4}    
+
+# Possible groupings (50 groups + 1 for rest).
+STATES_DICT = {"wyoming": 48, "colorado": 5, "washington": 45, "hawaii": 10, "tennessee": 40, 
+               "wisconsin": 47, "nevada": 26, "north dakota": 32, "mississippi": 22, "south dakota": 39, 
+               "new jersey": 28, "oklahoma": 34, "delaware": 7, "minnesota": 21, "north carolina": 31, 
+               "illinois": 12, "new york": 30, "arkansas": 3, "west virginia": 46, "indiana": 13, 
+               "louisiana": 17, "idaho": 11, "south  carolina": 38, "arizona": 2, "iowa": 14, "maine":49, "maryland": 18,
+               "michigan": 20, "kansas": 15, "utah": 42, "virginia": 44, "oregon": 35, "connecticut": 6, 
+               "montana": 24, "california": 4, "massachusetts": 19, "rhode island": 37, "vermont": 43, 
+               "georgia": 9, "pennsylvania": 36, "florida": 8, "alaska": 1, "kentucky": 16, "nebraska": 25, 
+               "new hampshire": 27, "texas": 41, "missouri": 23, "ohio": 33, "alabama": 0, "new mexico": 29}
+
+# Possible groups (14).
+SUBJECT_LIST = ["health","tax","immigration","election","education",
+                "candidates-biography","economy","gun","jobs","federal-budget","energy","abortion","foreign-policy"]
+SUBJECT_DICT = {"health":0,"tax":1,"immigration":2,"election":3,"education":4,
+                "candidates-biography":5,"economy":6,"gun":7,"jobs":8,"federal-budget":9,"energy":10,"abortion":11,"foreign-policy":12}
+
+VENUE_LIST = ["news release","interview","tv","radio",
+              "campaign","news conference","press conference","press release",
+              "tweet","facebook","email"]
+VENUE_DICT = {"news release":0,"interview":1,"tv":2,"radio":3,
+              "campaign":4,"news conference":5,"press conference":6,"press release":7,
+              "tweet":8,"facebook":9,"email":10}
+
+# Glove file locations.
 GLOVE_PATH = "glove.6B/glove.6B.100d.txt"  # where the glove embeddings live
 EMBEDDING_DIM = 100
 
@@ -63,6 +103,123 @@ def read_data(train_file, valid_file, test_file):
 
     return data_set, val_set, test_set, embeddings_index
 
+###########################
+# Map Features  
+###########################
+
+def map_speaker(speaker):
+    speaker_dict = {}
+    for cnt, speaker in enumerate(SPEAKERS_LIST):
+        speaker_dict[speaker] = cnt
+    # print(speaker_dict)
+    # print(len(SPEAKERS_LIST))
+
+    if isinstance(speaker, string_types):
+        speaker = speaker.lower()
+        matches = [s for s in SPEAKERS_LIST if s in speaker]
+        if len(matches) > 0:
+            return speaker_dict[matches[0]] #Return index of first match
+        else:
+            return len(SPEAKERS_LIST)
+    else:
+        return len(SPEAKERS_LIST) #Nans or un-string data goes here.
+ 
+def map_job(job):
+    """ Possible groupings could be (11 groups):
+    # president, us senator, governor(contains governor), president-elect, presidential candidate, us representative,
+    # state senator, attorney, state representative, congress (contains congressman or congresswoman), rest
+    """
+    if isinstance(job, string_types):
+        job = job.lower()
+        matches = [s for s in JOB_LIST if s in job]
+        if len(matches) > 0:
+            return JOB_DICT[matches[0]] #Return index of first match
+        else:
+            return 10 #This maps any other job to index 10
+    else:
+        return 10 #Nans or un-string data goes here.
+
+def map_party(party):
+    if party in PARTY_DICT:
+        return PARTY_DICT[party]
+    else:
+        return 5 # default index for rest party is 5
+
+def map_state(state):
+    if isinstance(state, string_types):
+        state = state.lower()  # convert to lowercase
+        if state in STATES_DICT:
+            return STATES_DICT[state]
+        else:
+            return 50 # This maps any other location to index 50
+    else:
+        return 50 # Nans or un-string data goes here.
+
+#possibe groups (12)
+#news release, interview, tv (television), radio, campaign, news conference, press conference, press release,
+#tweet, facebook, email, rest
+def map_venue(venue):
+    if isinstance(venue, string_types):
+        venue = venue.lower()
+        matches = [s for s in VENUE_LIST if s in venue]
+        if len(matches) > 0:
+            return VENUE_DICT[matches[0]] #Return index of first match
+        else:
+            return 11 #This maps any other venue to index 11
+    else:
+        return 11 # Nans or un-string data goes here.
+
+#health-care,taxes,immigration,elections,education,candidates-biography,guns,
+#economy&jobs ,federal-budget,energy,abortion,foreign-policy,state-budget, rest
+#Economy & Jobs is bundled together, because it occurs together
+def map_subject(subject):
+    if isinstance(subject, string_types):
+        subject = subject.lower()
+        matches = [s for s in SUBJECT_LIST if s in subject]
+        if len(matches) > 0:
+            return SUBJECT_DICT[matches[0]] #Return index of first match
+        else:
+            return 13 # This maps any other subject to index 13
+    else:
+        return 13 # Nans or un-string data goes here.
+
+def create_features(data_set, val_set, test_set):
+    # Create Labels.
+    data_set["label_id"] = data_set["label"].apply(lambda x: LABEL_DICT[x])
+    val_set["label_id"] = val_set["label"].apply(lambda x: LABEL_DICT[x])
+    test_set["label_id"] = test_set["label"].apply(lambda x: LABEL_DICT[x])
+
+    # Map speakers.
+    data_set["speaker_id"] = data_set["speaker"].apply(map_speaker)
+    val_set["speaker_id"] = val_set["speaker"].apply(map_speaker)
+    test_set["speaker_id"] = test_set["speaker"].apply(map_speaker) #Speaker
+
+    # Map jobs.
+    data_set["job_id"] = data_set["job"].apply(map_job)
+    val_set["job_id"] = val_set["job"].apply(map_job)
+    test_set["job_id"] = test_set["job"].apply(map_job) #Job
+
+    # Map parties (hyperparameter -> num_party).
+    data_set["party_id"] = data_set["party"].apply(map_party)
+    val_set["party_id"] = val_set["party"].apply(map_party)
+    test_set["party_id"] = test_set["party"].apply(map_party) #Party
+
+    # Map states.
+    data_set["state_id"] = data_set["state"].apply(map_state)
+    val_set["state_id"] = val_set["state"].apply(map_state)
+    test_set["state_id"] = test_set["state"].apply(map_state) #State
+
+    # Map subject.
+    data_set["subject_id"] = data_set["subject"].apply(map_subject)
+    val_set["subject_id"] = val_set["subject"].apply(map_subject)
+    test_set["subject_id"] = test_set["subject"].apply(map_subject) #Subject
+
+    #Map venues.
+    data_set["venue_id"] = data_set["venue"].apply(map_venue)
+    val_set["venue_id"] = val_set["venue"].apply(map_venue)
+    test_set["venue_id"] = test_set["venue"].apply(map_venue) #Venue
+
+    return data_set, val_set, test_set
 
 def run(train_file, valid_file, test_file, output_file):
     """ The function to run your ML algorithm on given datasets, 
@@ -80,166 +237,20 @@ def run(train_file, valid_file, test_file, output_file):
         the path to the output predictions to be saved
     """
 
-    #Read training data
+    # Read data and word embeddings.
     data_set, val_set, test_set, embeddings_index = read_data(train_file, valid_file, test_file)
-    
+
+    # Featurize the data.
+    data_set, val_set, test_set = create_features(data_set, val_set, test_set)
+
     ###########################
-    #   Creating features     #
+    #   Text preprocessing    #
     ###########################
 
-    # Map output label to six classes.
-    label_dict = {"pants-fire":0, "false":1, "barely-true":2, "half-true":3, "mostly-true":4, "true":5}
-    label_reverse_arr = ["pants-fire", "false", "barely-true", "half-true", "mostly-true", "true"]
-    
-    def create_one_hot(x):
-        return keras.utils.to_categorical(label_dict[x], num_classes=6)
-    data_set["label_id"] = data_set["label"].apply(lambda x: label_dict[x])
-    val_set["label_id"] = val_set["label"].apply(lambda x: label_dict[x])
-    val_set.head(3)
-
-    #Map speakers
-    speakers = ["barack-obama", "donald-trump", "hillary-clinton", "mitt-romney", 
-                "scott-walker", "john-mccain", "rick-perry", "chain-email", 
-                "marco-rubio", "rick-scott", "ted-cruz", "bernie-s", "chris-christie", 
-                "facebook-posts", "charlie-crist", "newt-gingrich", "jeb-bush", 
-                "joe-biden", "blog-posting","paul-ryan"]
-    
-    speaker_dict = {}
-    for cnt,speaker in enumerate(speakers):
-        speaker_dict[speaker] = cnt
-    print(speaker_dict)
-    def map_speaker(speaker):
-        if isinstance(speaker, string_types):
-            speaker = speaker.lower()
-            matches = [s for s in speakers if s in speaker]
-            if len(matches) > 0:
-                return speaker_dict[matches[0]] #Return index of first match
-            else:
-                return len(speakers)
-        else:
-            return len(speakers) #Nans or un-string data goes here.
-    data_set["speaker_id"] = data_set["speaker"].apply(map_speaker)
-    val_set["speaker_id"] = val_set["speaker"].apply(map_speaker)
-    print(len(speakers))
-
-
-    #Map jobs
-    job_list = ["president", "u.s. senator", "governor", "president-elect", "presidential candidate", 
-                "u.s. representative", "state senator", "attorney", "state representative", "congress"]
-
-    job_dict = {"president":0, "u.s. senator":1, "governor":2, "president-elect":3, "presidential candidate":4, 
-                "u.s. representative":5, "state senator":6, "attorney":7, "state representative":8, "congress":9}
-    #Possible groupings could be (11 groups)
-    #president, us senator, governor(contains governor), president-elect, presidential candidate, us representative,
-    #state senator, attorney, state representative, congress (contains congressman or congresswoman), rest
-    def map_job(job):
-        if isinstance(job, string_types):
-            job = job.lower()
-            matches = [s for s in job_list if s in job]
-            if len(matches) > 0:
-                return job_dict[matches[0]] #Return index of first match
-            else:
-                return 10 #This maps any other job to index 10
-        else:
-            return 10 #Nans or un-string data goes here.
-    data_set["job_id"] = data_set["job"].apply(map_job)
-    val_set["job_id"] = val_set["job"].apply(map_job)
-
-
-    #Map parties
-    #Hyper param -> num_party
-    party_dict = {"republican":0,"democrat":1,"none":2,"organization":3,"newsmaker":4}
-    #default index for rest party is 5
-    def map_party(party):
-        if party in party_dict:
-            return party_dict[party]
-        else:
-            return 5
-    data_set["party_id"] = data_set["party"].apply(map_party)
-    val_set["party_id"] = val_set["party"].apply(map_party)
-
-    #Map states
-    #Possible groupings (50 groups + 1 for rest)
-    states = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado",
-             "Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho", 
-             "Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana",
-             "Maine" "Maryland","Massachusetts","Michigan","Minnesota",
-             "Mississippi", "Missouri","Montana","Nebraska","Nevada",
-             "New Hampshire","New Jersey","New Mexico","New York",
-             "North Carolina","North Dakota","Ohio",    
-             "Oklahoma","Oregon","Pennsylvania","Rhode Island",
-             "South  Carolina","South Dakota","Tennessee","Texas","Utah",
-             "Vermont","Virginia","Washington","West Virginia",
-             "Wisconsin","Wyoming"]
-
-    states_dict = {"wyoming": 48, "colorado": 5, "washington": 45, "hawaii": 10, "tennessee": 40, "wisconsin": 47, "nevada": 26, "north dakota": 32, "mississippi": 22, "south dakota": 39, "new jersey": 28, "oklahoma": 34, "delaware": 7, "minnesota": 21, "north carolina": 31, "illinois": 12, "new york": 30, "arkansas": 3, "west virginia": 46, "indiana": 13, "louisiana": 17, "idaho": 11, "south  carolina": 38, "arizona": 2, "iowa": 14, "mainemaryland": 18, "michigan": 20, "kansas": 15, "utah": 42, "virginia": 44, "oregon": 35, "connecticut": 6, "montana": 24, "california": 4, "massachusetts": 19, "rhode island": 37, "vermont": 43, "georgia": 9, "pennsylvania": 36, "florida": 8, "alaska": 1, "kentucky": 16, "nebraska": 25, "new hampshire": 27, "texas": 41, "missouri": 23, "ohio": 33, "alabama": 0, "new mexico": 29}
-    def map_state(state):
-        if isinstance(state, string_types):
-            state = state.lower()
-            if state in states_dict:
-                return states_dict[state]
-            else:
-                if "washington" in state:
-                    return states_dict["washington"]
-                else:
-                    return 50 #This maps any other location to index 50
-        else:
-            return 50 #Nans or un-string data goes here.
-    data_set["state_id"] = data_set["state"].apply(map_state)
-    val_set["state_id"] = val_set["state"].apply(map_state)
-
-    #Map subject
-    #Possible groups (14)
-    subject_list = ["health","tax","immigration","election","education",
-    "candidates-biography","economy","gun","jobs","federal-budget","energy","abortion","foreign-policy"]
-
-    subject_dict = {"health":0,"tax":1,"immigration":2,"election":3,"education":4,
-    "candidates-biography":5,"economy":6,"gun":7,"jobs":8,"federal-budget":9,"energy":10,"abortion":11,"foreign-policy":12}
-    #health-care,taxes,immigration,elections,education,candidates-biography,guns,
-    #economy&jobs ,federal-budget,energy,abortion,foreign-policy,state-budget, rest
-    #Economy & Jobs is bundled together, because it occurs together
-    def map_subject(subject):
-        if isinstance(subject, string_types):
-            subject = subject.lower()
-            matches = [s for s in subject_list if s in subject]
-            if len(matches) > 0:
-                return subject_dict[matches[0]] #Return index of first match
-            else:
-                return 13 #This maps any other subject to index 13
-        else:
-            return 13 #Nans or un-string data goes here.
-
-    data_set["subject_id"] = data_set["subject"].apply(map_subject)
-    val_set["subject_id"] = val_set["subject"].apply(map_subject)
-
-
-    #Map venues
-    venue_list = ["news release","interview","tv","radio",
-                  "campaign","news conference","press conference","press release",
-                  "tweet","facebook","email"]
-    venue_dict = {"news release":0,"interview":1,"tv":2,"radio":3,
-                  "campaign":4,"news conference":5,"press conference":6,"press release":7,
-                  "tweet":8,"facebook":9,"email":10}
-    def map_venue(venue):
-        if isinstance(venue, string_types):
-            venue = venue.lower()
-            matches = [s for s in venue_list if s in venue]
-            if len(matches) > 0:
-                return venue_dict[matches[0]] #Return index of first match
-            else:
-                return 11 #This maps any other venue to index 11
-        else:
-            return 11 #Nans or un-string data goes here.
-    #possibe groups (12)
-    #news release, interview, tv (television), radio, campaign, news conference, press conference, press release,
-    #tweet, facebook, email, rest
-    data_set["venue_id"] = data_set["venue"].apply(map_venue)
-    val_set["venue_id"] = val_set["venue"].apply(map_venue)
-
-
-    #Tokenize statement and form/load vocabulary
-    vocab_dict = {}
     from keras.preprocessing.text import Tokenizer
+
+    # Tokenize statement and form/load vocabulary.
+    vocab_dict = {}
     if not os.path.exists("vocab.p"):
         t = Tokenizer()
         t.fit_on_texts(data_set["statement"])
@@ -250,21 +261,6 @@ def run(train_file, valid_file, test_file, output_file):
     else:
         print("Loading vocab dict from pickle file")
         vocab_dict = pickle.load(open("vocab.p", "rb" ))
-
-
-
-    #Get all preprocessing done for test data
-    test_set["job_id"] = test_set["job"].apply(map_job) #Job
-    test_set["party_id"] = test_set["party"].apply(map_party) #Party
-    test_set["state_id"] = test_set["state"].apply(map_state) #State
-    test_set["subject_id"] = test_set["subject"].apply(map_subject) #Subject
-    test_set["venue_id"] = test_set["venue"].apply(map_venue) #Venue
-    test_set["speaker_id"] = test_set["speaker"].apply(map_speaker) #Speaker
-
-
-    ###########################
-    #   Text preprocessing    #
-    ###########################
 
     #To access particular word_index. Just load these.
     #To read a word in a sentence use keras tokenizer again, coz easy
@@ -277,12 +273,10 @@ def run(train_file, valid_file, test_file, output_file):
 
     def pre_process_statement(statement):
         text = text_to_word_sequence(statement)
-        val = [0] * 10
         val = [vocab_dict[t] for t in text if t in vocab_dict] #Replace unk words with 0 index
         return val
 
-
-    #Creating embedding matrix to feed in embeddings directly bruv
+    # Creating embedding matrix to feed in embeddings directly.
     num_words = len(vocab_dict) + 1
     embedding_matrix = np.zeros((num_words, EMBEDDING_DIM))
     for word, i in vocab_dict.items():
@@ -290,7 +284,6 @@ def run(train_file, valid_file, test_file, output_file):
         if embedding_vector is not None:
             # words not found in embedding index will be all-zeros.
             embedding_matrix[i] = embedding_vector
-
 
     ###########################
     #   Hyper parameters      #
@@ -302,17 +295,18 @@ def run(train_file, valid_file, test_file, output_file):
     num_steps = 25
     num_epochs = 30
     batch_size = 40
-    #Hyperparams for CNN
+
+    # hyperparameters for CNN
     kernel_sizes = [2,5,8]
     filter_size = 128
-    #Meta data related hyper params
+
+    # Metadata related values.
     num_party = 6
     num_state = 51
     num_venue = 12
     num_job = 11
     num_sub = 14
     num_speaker = 21
-
 
     ###########################
     #   Training instances    #
@@ -327,12 +321,12 @@ def run(train_file, valid_file, test_file, output_file):
     X_val = val_set["word_ids"]
     Y_val = val_set["label_id"]
     X_test = test_set["word_ids"]
+
     X_train = sequence.pad_sequences(X_train, maxlen=num_steps, padding="post",truncating="post")
     Y_train = keras.utils.to_categorical(Y_train, num_classes=6)
     X_val = sequence.pad_sequences(X_val, maxlen=num_steps, padding="post",truncating="post")
     Y_val = keras.utils.to_categorical(Y_val, num_classes=6)
     X_test = sequence.pad_sequences(X_test, maxlen=num_steps, padding="post",truncating="post")
-
 
     #Meta data preparation
     a = keras.utils.to_categorical(data_set["party_id"], num_classes=num_party)
@@ -341,6 +335,7 @@ def run(train_file, valid_file, test_file, output_file):
     d = keras.utils.to_categorical(data_set["job_id"], num_classes=num_job)
     e = keras.utils.to_categorical(data_set["subject_id"], num_classes=num_sub)
     f = keras.utils.to_categorical(data_set["speaker_id"], num_classes=num_speaker)
+
     X_train_meta = np.hstack((a,b,c,d,e,f))#concat a and b
     a_val = keras.utils.to_categorical(val_set["party_id"], num_classes=num_party)
     b_val = keras.utils.to_categorical(val_set["state_id"], num_classes=num_state)
@@ -348,6 +343,7 @@ def run(train_file, valid_file, test_file, output_file):
     d_val = keras.utils.to_categorical(val_set["job_id"], num_classes=num_job)
     e_val = keras.utils.to_categorical(val_set["subject_id"], num_classes=num_sub)
     f_val = keras.utils.to_categorical(val_set["speaker_id"], num_classes=num_speaker)
+
     X_val_meta = np.hstack((a_val,b_val,c_val,d_val,e_val,f_val))#concat a_val and b_val
     a_test = keras.utils.to_categorical(test_set["party_id"], num_classes=num_party)
     b_test = keras.utils.to_categorical(test_set["state_id"], num_classes=num_state)
@@ -355,9 +351,8 @@ def run(train_file, valid_file, test_file, output_file):
     d_test = keras.utils.to_categorical(test_set["job_id"], num_classes=num_job)
     e_test = keras.utils.to_categorical(test_set["subject_id"], num_classes=num_sub)
     f_test = keras.utils.to_categorical(test_set["speaker_id"], num_classes=num_speaker)
+
     X_test_meta = np.hstack((a_test,b_test,c_test,d_test,e_test,f_test))#concat all test data
-
-
 
     ###########################
     #   Model definitions     #
@@ -371,7 +366,7 @@ def run(train_file, valid_file, test_file, output_file):
 
 
     ###########################
-    #   LSTM Model            #
+    # LSTM Model            
     ###########################
 
     #statement_input = Input(shape=(num_steps,), dtype="int32", name="main_input")
@@ -386,7 +381,7 @@ def run(train_file, valid_file, test_file, output_file):
 
 
     ###########################
-    #   CNN Model             #
+    # CNN Model             
     ###########################
     kernel_arr = []
     statement_input = Input(shape=(num_steps,), dtype="int32", name="main_input")
@@ -463,7 +458,7 @@ def run(train_file, valid_file, test_file, output_file):
     vf = open(output_file, "w+")
     counter = 0
     for pred in preds:  
-        line_string = label_reverse_arr[np.argmax(pred)]
+        line_string = LABEL_LIST_REVERSE[np.argmax(pred)]
         vf.write(line_string+"\n")
         counter += 1
     print(counter)
