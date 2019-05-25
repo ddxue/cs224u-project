@@ -3,6 +3,7 @@ import numpy as np
 import os
 from sentence2vec import Sentence2Vec
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 
 DATA_HOME = 'Fake_News_Detection/liar_dataset'
 MODEL_FILENAME = './job_titles.model'
@@ -160,6 +161,9 @@ def evaluate(y, yhat, mode=MODE):
 	assert mode in MODES
 	assert len(y) == len(yhat)
 	if mode == BINARY or mode == HEXARY:
+		print(confusion_matrix(y, yhat))
+		print(f1_score(y, yhat))
+		print(accuracy_score(y, yhat))
 		return np.mean([int(y[i] == yhat[i]) for i in range(len(y))])
 	elif mode == REGRESS:
 		# Return MSE
