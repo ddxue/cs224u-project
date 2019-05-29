@@ -119,7 +119,6 @@ def load_data_from_file(file_name, model):
 	return X, y
 
 def load_all_data(model, load_from_cache=True, cache=True, normalize=True):
-	load_from_cache = False
 	train_X, train_y = get_np_data('train')
 	mean_X, _ = get_np_data('mean')
 	std_X, _ = get_np_data('std')
@@ -186,5 +185,7 @@ if __name__ == '__main__':
 
 	log_reg = LogisticRegression().fit(train_X, train_y)
 	val_yhat = log_reg.predict(val_X)
+	train_yhat = log_reg.predict(train_X)
 	print("Evaluating..")
+	print(evaluate(train_y, train_yhat))
 	print(evaluate(val_y, val_yhat))
