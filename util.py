@@ -54,13 +54,20 @@ def raw_to_numeric(x, model):
 def raw_to_numeric_features(raw_X, model):
 	assert raw_X.shape[1] == 12
 	X = None
-	for i in range(raw_X.shape[0]):
+	n = raw_X.shape[0]
+	for i in range(n):
 		if i % 100 == 0:
 			print("On Data Point {} of {}".format(i, raw_X.shape[0]))
 		if X is None:
 			X = raw_to_numeric(raw_X[i], model)
 		else:
-			X = np.vstack((X, raw_to_numeric(raw_X[i], model)))
+			if i == 1:
+				temp = np.zeros((n, X.shape[0]))
+				temp[0] = X[0]
+				X = temp
+			else:
+				X[i] = raw_to_numeric(raw_X[i], model)
+			#X = np.vstack((X, raw_to_numeric(raw_X[i], model)))
 	return X
 
 # Convert labels to numeric.
@@ -111,11 +118,11 @@ def load_data_from_file(file_name, model):
 	print("Done loading data...")
 	return X, y
 
-def load_all_data(model, cache=True, normalize=True):
+def load_all_data(model, load_from_cache=True, cache=True, normalize=True):
 	train_X, train_y = get_np_data('train')
 	mean_X, _ = get_np_data('mean')
 	std_X, _ = get_np_data('std')
-	if train_X is None or train_y is None or mean_X is None or std_X is None:
+	if not load_from_cache or train_X is None or train_y is None or mean_X is None or std_X is None:
 		train_X, train_y = load_data_from_file(TRAIN_FILENAME, model)
 		train_X = np.array(train_X, dtype=np.float32)
 		replace_nans(train_X)
@@ -132,7 +139,7 @@ def load_all_data(model, cache=True, normalize=True):
 	if normalize:
 		train_X = (train_X - mean_X) / std_X
 	val_X, val_y = get_np_data('val')
-	if val_X is None or val_y is None:
+	if not load_from_cache or val_X is None or val_y is None:
 		val_X, val_y = load_data_from_file(VALID_FILENAME, model)
 		val_X = np.array(val_X, dtype=np.float32)
 		replace_nans(val_X)
@@ -143,7 +150,7 @@ def load_all_data(model, cache=True, normalize=True):
 	if normalize:
 		val_X = (val_X - mean_X) / std_X
 	test_X, test_y = get_np_data('test')
-	if test_X is None or test_y is None:
+	if not load_from_cache or test_X is None or test_y is None:
 		test_X, test_y = load_data_from_file(TEST_FILENAME, model)
 		test_X = np.array(test_X, dtype=np.float32)
 		replace_nans(test_X)
@@ -178,5 +185,7 @@ if __name__ == '__main__':
 
 	log_reg = LogisticRegression().fit(train_X, train_y)
 	val_yhat = log_reg.predict(val_X)
+	train_yhat = log_reg.predict(train_X)
 	print("Evaluating..")
+	print(evaluate(train_y, train_yhat))
 	print(evaluate(val_y, val_yhat))
