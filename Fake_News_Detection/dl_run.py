@@ -26,6 +26,7 @@ EMBEDDING_DIM = 100
 ###########################
 
 def f1(y_true, y_pred):
+    
     def recall(y_true, y_pred):
         """Recall metric.
 
@@ -51,6 +52,7 @@ def f1(y_true, y_pred):
         predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
         precision = true_positives / (predicted_positives + K.epsilon())
         return precision
+    
     precision = precision(y_true, y_pred)
     recall = recall(y_true, y_pred)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
