@@ -17,7 +17,7 @@ BINARY = '2-Way'
 HEXARY = '6-Way'
 REGRESS = 'Regress'
 MODES = [BINARY, HEXARY, REGRESS]
-MODE = MODES[0]
+MODE = MODES[1]
 
 LABEL_TO_INT = {
     'pants-fire': 0,
@@ -201,8 +201,8 @@ def standardized_features(x):
     features.append(contextual_features)
 
     # Add rest
-    print(x)
-    print(features)
+    #print(x)
+    #print(features)
     return features
 
 ####################################
@@ -219,10 +219,21 @@ def load_raw_data(file_name=TEST_FILENAME):
     return X, y
 
 
-
+# Convert a single row of data into a vector
+def raw_to_numeric_std(x, model):
+    features = standardized_features(x)
+    statement_vec = model.get_vector(features[0])
+    venue_vec = model.get_vector(features[1])
+    #print(statement_vec.shape)
+    #print(venue_vec.shape)
+    #print(x[2].shape)
+    return np.concatenate((statement_vec, venue_vec, features[2]))
 
 # Convert a single row of data into a vector
 def raw_to_numeric(x, model):
+    return raw_to_numeric_std(x, model)
+
+    # NEVER USE THIS..
     assert len(x) == 12
     sentence_vec = model.get_vector(x[0])
     statement_counts = x[6:11]
@@ -243,12 +254,8 @@ def raw_to_numeric_features(raw_X, model):
         if i % 100 == 0:
             print("On Data Point {} of {}".format(i, raw_X.shape[0]))
         if X is None:
-            standardized_features(raw_X[0])
             X = raw_to_numeric(raw_X[i], model)
         else:
-            standardized_features(raw_X[i])
-            if i == 5:
-                0/0
             if i == 1:
                 temp = np.zeros((n, X.shape[0]))
                 temp[0] = X[0]
@@ -306,7 +313,7 @@ def load_data_from_file(file_name, model):
     print("Done loading data...")
     return X, y
 
-def load_all_data(model, load_from_cache=False, cache=True, normalize=True):
+def load_all_data(model, load_from_cache=True, cache=True, normalize=True):
     train_X, train_y = get_np_data('train')
     mean_X, _ = get_np_data('mean')
     std_X, _ = get_np_data('std')
@@ -357,8 +364,8 @@ def evaluate(y, yhat, mode=MODE):
     assert len(y) == len(yhat)
     if mode == BINARY or mode == HEXARY:
         print(confusion_matrix(y, yhat))
-        print(f1_score(y, yhat))
-        print(accuracy_score(y, yhat))
+        print("F1 Score: {}".format(f1_score(y, yhat, average='macro')))
+        print("Accuracy: {}".format(accuracy_score(y, yhat)))
         return np.mean([int(y[i] == yhat[i]) for i in range(len(y))])
     elif mode == REGRESS:
         # Return MSE
@@ -375,5 +382,8 @@ if __name__ == '__main__':
     val_yhat = log_reg.predict(val_X)
     train_yhat = log_reg.predict(train_X)
     print("Evaluating..")
-    print(evaluate(train_y, train_yhat))
-    print(evaluate(val_y, val_yhat))
+
+    print("Train Results")
+    evaluate(train_y, train_yhat)
+    print("Val Results")
+    evaluate(val_y, val_yhat)
