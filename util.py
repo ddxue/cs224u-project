@@ -235,7 +235,7 @@ def raw_to_numeric_features(raw_X, model):
     X = None
     n = raw_X.shape[0]
     for i in range(n):
-        if i % 100 == 0:
+        if i % 250 == 0:
             print("On Data Point {} of {}".format(i, raw_X.shape[0]))
         if X is None:
             X = raw_to_numeric_std(raw_X[i], model)
@@ -352,20 +352,3 @@ def evaluate(y, yhat, mode=MODE):
     elif mode == REGRESS:
         # Return MSE
         return np.mean(np.square(y - yhat))
-
-if __name__ == '__main__':
-    model = Sentence2Vec(MODEL_FILENAME)
-    train_X, train_y, val_X, val_y, test_X, test_y = load_all_data(model)
-    print(train_X.shape)
-    print(train_y.shape)
-    print("Fitting Model...")
-
-    log_reg = LogisticRegression().fit(train_X, train_y)
-    val_yhat = log_reg.predict(val_X)
-    train_yhat = log_reg.predict(train_X)
-    print("Evaluating..")
-
-    print("Train Results")
-    evaluate(train_y, train_yhat)
-    print("Val Results")
-    evaluate(val_y, val_yhat)
