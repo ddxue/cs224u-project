@@ -6,12 +6,19 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 from six import string_types
 
+###################
+# DATA PATHS
+###################
 
 DATA_HOME = 'Fake_News_Detection/liar_dataset'
 MODEL_FILENAME = './job_titles.model'
 TEST_FILENAME = os.path.join(DATA_HOME, 'test.tsv')
 TRAIN_FILENAME = os.path.join(DATA_HOME, 'train.tsv')
 VALID_FILENAME = os.path.join(DATA_HOME, 'valid.tsv')
+
+###################
+# TASKS
+###################
 
 BINARY = '2-Way'
 HEXARY = '6-Way'
@@ -33,9 +40,10 @@ COLUMNS_NAMES = ["id",
                 "barely-true-counts", "false-counts", "half-true-counts", "mostly-true-counts", "pants-fire-counts",  # columns 9-13 (counts)
                 "venue"]  # names of the columns in the tsv files
 
-# Map output label to six classes.
-#LABEL_LIST_REVERSE = ["pants-fire", "false", "barely-true", "half-true", "mostly-true", "true"]
-#LABEL_DICT = {"pants-fire":0, "false":0, "barely-true":0, "half-true":1, "mostly-true":1, "true":1}
+###############################
+# CATEGORICAL FEATURE CONSTANTS
+###############################
+
 SPEAKERS_LIST = ["barack-obama", "donald-trump", "hillary-clinton", "mitt-romney", 
             "scott-walker", "john-mccain", "rick-perry", "chain-email", 
             "marco-rubio", "rick-scott", "ted-cruz", "bernie-s", "chris-christie", 
@@ -171,7 +179,7 @@ def reputation_vec(statement_counts):
 ##################################
 
 # Take a single data point and return
-# [original statement, venue, job?, np.array(other contextual features)]
+# [original statement, venue, np.array(other contextual features)]
 def standardized_features(x):
     assert len(x) == 12
     features = []
