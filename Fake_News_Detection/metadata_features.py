@@ -47,6 +47,76 @@ VENUE_DICT = {"news release":0,"interview":1,"tv":2,"radio":3,
 # Map Features  
 ###########################
 
+# def read_data(train_file, valid_file, test_file):
+#     """ Read in the training, validation, and test data from .tsv files.
+
+#     Parameters
+#     ----------
+#     train_file: string
+#         the path to the training file
+#     valid_file: string
+#             the path to the validation file
+#     test_file: string
+#             the path to the testing file
+#     """
+    
+#     # Read data.
+#     data_set = pd.read_table(train_file, names=COLUMNS_NAMES)
+#     val_set = pd.read_table(valid_file, names=COLUMNS_NAMES)
+#     test_set = pd.read_table(test_file, names=COLUMNS_NAMES)
+
+#     # Use pretrained word embeddings (experiment).
+#     # Read GloVe vectors and get unique words in an array.
+#     embeddings_index = {}
+#     with open(GLOVE_PATH) as fp:
+#         for line in fp:
+#             values = line.split()
+#             vectors = np.asarray(values[1:], dtype="float32")
+#             embeddings_index[values[0].lower()] = vectors
+    
+#     print("File reading is done.")
+#     print("Found %s word vectors." % len(embeddings_index))
+
+#     return data_set, val_set, test_set, embeddings_index
+
+# def create_features(data_set, val_set, test_set):
+#     # Create Labels.
+#     data_set["label_id"] = data_set["label"].apply(lambda x: LABEL_DICT[x])
+#     val_set["label_id"] = val_set["label"].apply(lambda x: LABEL_DICT[x])
+#     test_set["label_id"] = test_set["label"].apply(lambda x: LABEL_DICT[x])
+
+#     # Map speakers.
+#     data_set["speaker_id"] = data_set["speaker"].apply(map_speaker)
+#     val_set["speaker_id"] = val_set["speaker"].apply(map_speaker)
+#     test_set["speaker_id"] = test_set["speaker"].apply(map_speaker) #Speaker
+
+#     # Map jobs.
+#     data_set["job_id"] = data_set["job"].apply(map_job)
+#     val_set["job_id"] = val_set["job"].apply(map_job)
+#     test_set["job_id"] = test_set["job"].apply(map_job) #Job
+
+#     # Map parties (hyperparameter -> num_party).
+#     data_set["party_id"] = data_set["party"].apply(map_party)
+#     val_set["party_id"] = val_set["party"].apply(map_party)
+#     test_set["party_id"] = test_set["party"].apply(map_party) #Party
+
+#     # Map states.
+#     data_set["state_id"] = data_set["state"].apply(map_state)
+#     val_set["state_id"] = val_set["state"].apply(map_state)
+#     test_set["state_id"] = test_set["state"].apply(map_state) #State
+
+#     # Map subject.
+#     data_set["subject_id"] = data_set["subject"].apply(map_subject)
+#     val_set["subject_id"] = val_set["subject"].apply(map_subject)
+#     test_set["subject_id"] = test_set["subject"].apply(map_subject) #Subject
+
+#     #Map venues.
+#     data_set["venue_id"] = data_set["venue"].apply(map_venue)
+#     val_set["venue_id"] = val_set["venue"].apply(map_venue)
+#     test_set["venue_id"] = test_set["venue"].apply(map_venue) #Venue
+
+#     return data_set, val_set, test_set
+
 def map_speaker(speaker):
     speaker_dict = {}
     for cnt, speaker in enumerate(SPEAKERS_LIST):
