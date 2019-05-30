@@ -80,15 +80,13 @@ VENUE_DICT = {"news release":0,"interview":1,"tv":2,"radio":3,
               "tweet":8,"facebook":9,"email":10}
 
 ###########################
-# Map Features  
+# MAP FEATURES, BINARIZING
 ###########################
 
 def map_speaker(speaker):
     speaker_dict = {}
     for cnt, speaker in enumerate(SPEAKERS_LIST):
         speaker_dict[speaker] = cnt
-    # print(speaker_dict)
-    # print(len(SPEAKERS_LIST))
 
     if isinstance(speaker, string_types):
         speaker = speaker.lower()
@@ -164,6 +162,10 @@ def make_one_hot(index, maximum):
     one_hot[index] = 1
     return one_hot
 
+############################
+# Reputation Score(s)
+# TODO: play with this!
+############################
 def reputation_vec(statement_counts):
     assert len(statement_counts) == 5
     x = np.array(statement_counts)
@@ -175,7 +177,8 @@ def reputation_vec(statement_counts):
     return x / np.sum(x)
 
 ##################################
-# USE THIS FUNCTION
+# FOR STANDARDIZING ACROSS MODELS,
+# USE THIS FUNCTION!!
 ##################################
 
 # Take a single data point and return
@@ -195,11 +198,7 @@ def standardized_features(x):
     state = make_one_hot(map_state(x[4]), 51)
     party = make_one_hot(map_party(x[5]), 6)
     contextual_features = np.concatenate((
-        subject, 
-        speaker, 
-        job,
-        state,
-        party))
+        subject, speaker, job, state, party))
     assert np.sum(contextual_features) == 5
 
     # Counts of the statements
@@ -208,9 +207,6 @@ def standardized_features(x):
         reputation_vec(statement_counts)))
     features.append(contextual_features)
 
-    # Add rest
-    #print(x)
-    #print(features)
     return features
 
 ####################################
@@ -226,32 +222,12 @@ def load_raw_data(file_name=TEST_FILENAME):
     y = data[:,1].reshape(-1)
     return X, y
 
-
 # Convert a single row of data into a vector
 def raw_to_numeric_std(x, model):
     features = standardized_features(x)
     statement_vec = model.get_vector(features[0])
     venue_vec = model.get_vector(features[1])
-    #print(statement_vec.shape)
-    #print(venue_vec.shape)
-    #print(x[2].shape)
     return np.concatenate((statement_vec, venue_vec, features[2]))
-
-# Convert a single row of data into a vector
-def raw_to_numeric(x, model):
-    return raw_to_numeric_std(x, model)
-
-    # NEVER USE THIS..
-    assert len(x) == 12
-    sentence_vec = model.get_vector(x[0])
-    statement_counts = x[6:11]
-    false_counts = np.array([x[6] + x[7] + x[10]])
-    true_counts = np.array([x[8] + x[9]])
-    z = np.concatenate((sentence_vec, 
-        statement_counts, 
-        false_counts, 
-        true_counts))
-    return z
 
 # Convert entire raw dataset into numeric one
 def raw_to_numeric_features(raw_X, model):
@@ -262,15 +238,14 @@ def raw_to_numeric_features(raw_X, model):
         if i % 100 == 0:
             print("On Data Point {} of {}".format(i, raw_X.shape[0]))
         if X is None:
-            X = raw_to_numeric(raw_X[i], model)
+            X = raw_to_numeric_std(raw_X[i], model)
         else:
             if i == 1:
                 temp = np.zeros((n, X.shape[0]))
                 temp[0] = X[0]
                 X = temp
             else:
-                X[i] = raw_to_numeric(raw_X[i], model)
-            #X = np.vstack((X, raw_to_numeric(raw_X[i], model)))
+                X[i] = raw_to_numeric_std(raw_X[i], model)
     return X
 
 # Convert labels to numeric.
@@ -294,7 +269,6 @@ def get_batch(X, y, batch_size=1, replace=True):
     X_batch = X[indices]
     y_batch = y[indices]
     return X_batch, y_batch
-
 
 def get_np_filenames(dataset):
     np_X_file_name = os.path.join(DATA_HOME, dataset + '_X.npy')
@@ -321,7 +295,7 @@ def load_data_from_file(file_name, model):
     print("Done loading data...")
     return X, y
 
-def load_all_data(model, load_from_cache=True, cache=True, normalize=True):
+def load_all_data(model, load_from_cache=False, cache=True, normalize=True):
     train_X, train_y = get_np_data('train')
     mean_X, _ = get_np_data('mean')
     std_X, _ = get_np_data('std')
