@@ -21,7 +21,7 @@ class ValResult():
         res += ' val acc: ' + str(self.val_acc)
         return res
 
-def hyperparam_search(mode=HEXARY):
+def hyperparam_search(mode=BINARY):
     model = Sentence2Vec(MODEL_FILENAME)
     val_results = []
     for normalize in [True, False]:

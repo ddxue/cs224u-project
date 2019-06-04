@@ -1,0 +1,31 @@
+Summary of results
+normalize: True C: 0.1 reg: l1 || train f1: 0.7278 train acc: 0.7359 val f1: 0.7091 val acc: 0.7126
+normalize: True C: 0.1 reg: l2 || train f1: 0.7342 train acc: 0.7419 val f1: 0.7085 val acc: 0.7118
+normalize: True C: 1 reg: l1 || train f1: 0.7305 train acc: 0.7381 val f1: 0.7078 val acc: 0.7111
+normalize: True C: 1 reg: l2 || train f1: 0.7349 train acc: 0.7426 val f1: 0.7069 val acc: 0.7103
+normalize: True C: 10 reg: l1 || train f1: 0.7308 train acc: 0.7384 val f1: 0.7078 val acc: 0.7111
+normalize: True C: 10 reg: l2 || train f1: 0.7346 train acc: 0.7424 val f1: 0.7069 val acc: 0.7103
+normalize: False C: 0.1 reg: l1 || train f1: 0.7171 train acc: 0.7276 val f1: 0.7052 val acc: 0.7111
+normalize: False C: 0.1 reg: l2 || train f1: 0.7192 train acc: 0.7297 val f1: 0.7073 val acc: 0.7126
+normalize: False C: 1 reg: l1 || train f1: 0.721 train acc: 0.7309 val f1: 0.7101 val acc: 0.715
+normalize: False C: 1 reg: l2 || train f1: 0.7235 train acc: 0.733 val f1: 0.7046 val acc: 0.7095
+normalize: False C: 10 reg: l1 || train f1: 0.7291 train acc: 0.7377 val f1: 0.7136 val acc: 0.7173
+normalize: False C: 10 reg: l2 || train f1: 0.7287 train acc: 0.7373 val f1: 0.7049 val acc: 0.7087
+Best result:
+normalize: False C: 10 reg: l1 || train f1: 0.7291 train acc: 0.7377 val f1: 0.7136 val acc: 0.7173
+
+Summary of results
+normalize: True C: 0.1 reg: l1 || train f1: 0.4823 train acc: 0.4871 val f1: 0.4501 val acc: 0.4564
+normalize: True C: 0.1 reg: l2 || train f1: 0.5013 train acc: 0.5011 val f1: 0.4341 val acc: 0.44
+normalize: True C: 1 reg: l1 || train f1: 0.4853 train acc: 0.4896 val f1: 0.4515 val acc: 0.4587
+normalize: True C: 1 reg: l2 || train f1: 0.5018 train acc: 0.5012 val f1: 0.4344 val acc: 0.44
+normalize: True C: 10 reg: l1 || train f1: 0.4856 train acc: 0.49 val f1: 0.4484 val acc: 0.4556
+normalize: True C: 10 reg: l2 || train f1: 0.502 train acc: 0.5013 val f1: 0.4344 val acc: 0.44
+normalize: False C: 0.1 reg: l1 || train f1: 0.4597 train acc: 0.4609 val f1: 0.4755 val acc: 0.4759
+normalize: False C: 0.1 reg: l2 || train f1: 0.4559 train acc: 0.4605 val f1: 0.4565 val acc: 0.4579
+normalize: False C: 1 reg: l1 || train f1: 0.4592 train acc: 0.4607 val f1: 0.4506 val acc: 0.4525
+normalize: False C: 1 reg: l2 || train f1: 0.4651 train acc: 0.4676 val f1: 0.4495 val acc: 0.4502
+normalize: False C: 10 reg: l1 || train f1: 0.4857 train acc: 0.4857 val f1: 0.4548 val acc: 0.4548
+normalize: False C: 10 reg: l2 || train f1: 0.4692 train acc: 0.4693 val f1: 0.4523 val acc: 0.4502
+Best result:
+normalize: False C: 0.1 reg: l1 || train f1: 0.4597 train acc: 0.4609 val f1: 0.4755 val acc: 0.4759
