@@ -235,7 +235,7 @@ def raw_to_numeric_features(raw_X, model):
     X = None
     n = raw_X.shape[0]
     for i in range(n):
-        if i % 250 == 0:
+        if i % 500 == 0:
             print("On Data Point {} of {}".format(i, raw_X.shape[0]))
         if X is None:
             X = raw_to_numeric_std(raw_X[i], model)
@@ -285,22 +285,22 @@ def get_np_data(dataset):
     return X, y
 
 # Load data
-def load_data_from_file(file_name, model):
+def load_data_from_file(file_name, model, mode=MODE):
     print("Loading Raw Data...")
     raw_X, y = load_raw_data(file_name)
     print("Converting Sentences To Vectors...")
     X = raw_to_numeric_features(raw_X, model)
     print("Converting Labels...")
-    y = convert_labels(y, MODE)
+    y = convert_labels(y, mode)
     print("Done loading data...")
     return X, y
 
-def load_all_data(model, load_from_cache=False, cache=True, normalize=True):
+def load_all_data(model, mode=MODE, load_from_cache=False, cache=True, normalize=True):
     train_X, train_y = get_np_data('train')
     mean_X, _ = get_np_data('mean')
     std_X, _ = get_np_data('std')
     if not load_from_cache or train_X is None or train_y is None or mean_X is None or std_X is None:
-        train_X, train_y = load_data_from_file(TRAIN_FILENAME, model)
+        train_X, train_y = load_data_from_file(TRAIN_FILENAME, model, mode=mode)
         train_X = np.array(train_X, dtype=np.float32)
         replace_nans(train_X)
         mean_X = np.mean(train_X, axis=0)
@@ -317,7 +317,7 @@ def load_all_data(model, load_from_cache=False, cache=True, normalize=True):
         train_X = (train_X - mean_X) / std_X
     val_X, val_y = get_np_data('val')
     if not load_from_cache or val_X is None or val_y is None:
-        val_X, val_y = load_data_from_file(VALID_FILENAME, model)
+        val_X, val_y = load_data_from_file(VALID_FILENAME, model, mode=mode)
         val_X = np.array(val_X, dtype=np.float32)
         replace_nans(val_X)
         if cache:
@@ -328,7 +328,7 @@ def load_all_data(model, load_from_cache=False, cache=True, normalize=True):
         val_X = (val_X - mean_X) / std_X
     test_X, test_y = get_np_data('test')
     if not load_from_cache or test_X is None or test_y is None:
-        test_X, test_y = load_data_from_file(TEST_FILENAME, model)
+        test_X, test_y = load_data_from_file(TEST_FILENAME, model, mode=mode)
         test_X = np.array(test_X, dtype=np.float32)
         replace_nans(test_X)
         if cache:
@@ -345,10 +345,19 @@ def evaluate(y, yhat, mode=MODE):
     assert mode in MODES
     assert len(y) == len(yhat)
     if mode == BINARY or mode == HEXARY:
-        print(confusion_matrix(y, yhat))
-        print("F1 Score: {}".format(f1_score(y, yhat, average='macro')))
-        print("Accuracy: {}".format(accuracy_score(y, yhat)))
-        return np.mean([int(y[i] == yhat[i]) for i in range(len(y))])
+        if mode == BINARY:
+            print("Reporting BINARY classification results")
+        else:
+            print("Reporting HEXARY classification results")
+        conf_matrix = confusion_matrix(y, yhat)
+        print(conf_matrix)
+        f1 = np.round(f1_score(y, yhat, average='macro'), 4)
+        acc = np.round(accuracy_score(y, yhat), 4)
+        print("F1 Score: {}".format(f1))
+        print("Accuracy: {}".format(acc))
+        return conf_matrix, f1, acc
     elif mode == REGRESS:
+        print("Reporting REGRESSION results")
+        print("Accuracy: {}".format(accuracy_score(y, yhat)))
         # Return MSE
         return np.mean(np.square(y - yhat))
