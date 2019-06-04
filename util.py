@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import os
 from sentence2vec import Sentence2Vec
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 from six import string_types
 

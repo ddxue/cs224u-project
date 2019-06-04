@@ -1,6 +1,7 @@
 from util import *
+from sklearn.linear_model import LogisticRegression
 
-class ValResult():
+class ValConf():
     def __init__(self, param_names, params, train_conf, train_f1, train_acc, val_conf, val_f1, val_acc):
         self.param_names = param_names
         self.params = params
@@ -56,7 +57,7 @@ def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2'):
     train_conf, train_f1, train_acc = evaluate(train_y, train_yhat)
     print("Val Results")
     val_conf, val_f1, val_acc = evaluate(val_y, val_yhat)
-    return ValResult(['normalize', 'C', 'reg'], 
+    return ValConf(['normalize', 'C', 'reg'], 
         [normalize, C, reg], 
         train_conf, train_f1, train_acc, 
         val_conf, val_f1, val_acc)
