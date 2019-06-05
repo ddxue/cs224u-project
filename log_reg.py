@@ -13,7 +13,10 @@ class ValConf():
         self.val_acc = val_acc
 
     def __str__(self):
-        tex = str(self.train_f1) + ' & ' + str(self.train_acc) + ' & ' + str(self.val_f1) + ' & ' + str(self.val_acc)
+        #tex = str(self.train_f1) + ' & ' + str(self.train_acc) + ' & ' + str(self.val_f1) + ' & ' + str(self.val_acc)
+        tex = str(self.val_f1) + ' & ' + str(self.val_acc) + '\\\\'
+        
+        return tex
         res = ''
         for i in range(len(self.param_names)):
             res += self.param_names[i] + ': ' + str(self.params[i]) + ' '
@@ -93,14 +96,15 @@ def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2', 
     print("Fitting Model...")
     log_reg = LogisticRegression(C=C, 
         penalty=reg,
-        solver=('lbfgs' if reg == 'l2' else 'saga'), 
+        solver=('lbfgs' if reg == 'l2' else 'saga'),
+        max_iter=150, 
         multi_class='multinomial').fit(train_X, train_y)
 
     val_yhat = log_reg.predict(val_X)
     train_yhat = log_reg.predict(train_X)
     print("Evaluating..")
     print("Train Results")
-    train_conf, train_f1, train_acc = evaluate(train_y, train_yhat)
+    train_conf, train_f1, train_acc = evaluate(train_y, train_yhat, mode=mode)
     print("Val Results")
     val_conf, val_f1, val_acc = evaluate(val_y, val_yhat, mode=mode)
     return ValConf(['normalize', 'C', 'reg'], 
@@ -109,5 +113,5 @@ def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2', 
         val_conf, val_f1, val_acc)
 
 if __name__ == '__main__':
-    hyperparam_search(mode=BINARY)
-    #ablation_study(mode=HEXARY)
+    #hyperparam_search(mode=HEXARY)
+    ablation_study(mode=BINARY)
