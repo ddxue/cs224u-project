@@ -53,7 +53,7 @@ def ablation_study(mode=BINARY):
     val_results = []
     train_X, train_y, val_X, val_y, test_X, test_y \
         = load_all_data(model, normalize=False, mode=mode)
-
+    # print(np.mean(val_y))
     # Hardcoded best settings from hyperparam search
     # Both had normalize=False and reg='l1'
     C = (10 if mode == BINARY else 0.1)
@@ -109,5 +109,5 @@ def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2', 
         val_conf, val_f1, val_acc)
 
 if __name__ == '__main__':
-    #hyperparam_search()
-    ablation_study(mode=BINARY)
+    hyperparam_search(mode=BINARY)
+    #ablation_study(mode=HEXARY)
