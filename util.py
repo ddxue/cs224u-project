@@ -4,6 +4,7 @@ import os
 from sentence2vec import Sentence2Vec
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 from six import string_types
+import csv
 
 ###################
 # DATA PATHS
@@ -216,7 +217,9 @@ def replace_nans(x, replacement=0):
 
 # Loads (X, y) from filename
 def load_raw_data(file_name=TEST_FILENAME):
-    data = pd.read_csv(file_name, sep='\t', header=None).to_numpy()
+    data = pd.read_table(file_name, delimiter='\t', quoting=csv.QUOTE_NONE, names=COLUMNS_NAMES).to_numpy()
+    #data = pd.read_csv(file_name, sep='\t', header=None).to_numpy()
+    print(data.shape)
     X = data[:,2:]
     y = data[:,1].reshape(-1)
     return X, y
