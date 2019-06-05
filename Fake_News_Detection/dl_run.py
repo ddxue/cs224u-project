@@ -5,10 +5,14 @@ import csv
 
 import pickle
 
+import tensorflow as tf
+
 import matplotlib.pyplot as plt
 
 import pandas as pd
 import numpy as np
+
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 
 import keras.utils
 from keras.utils.vis_utils import plot_model
@@ -33,6 +37,12 @@ from metadata_features import *
 ###########################
 #  Constants            
 ###########################
+
+BINARY = '2-Way'
+HEXARY = '6-Way'
+REGRESS = 'Regress'
+MODES = [BINARY, HEXARY, REGRESS]
+MODE = MODES[1]
 
 # Glove file locations.
 GLOVE_PATH = "glove.6B/glove.6B.100d.txt"  # where the glove embeddings live
@@ -371,66 +381,67 @@ def run(train_file, valid_file, test_file, output_file):
     # LSTM Model            
     ###########################
 
-    statement_input = Input(shape=(num_steps,), dtype="int32", name="statement_input")
+    # statement_input = Input(shape=(num_steps,), dtype="int32", name="statement_input")
 
-    x = Embedding(vocab_length+1,EMBEDDING_DIM,weights=[embedding_matrix],input_length=num_steps,trainable=False)(statement_input) #Preloaded glove embeddings
-    # x = Embedding(output_dim=hidden_size, input_dim=vocab_length+1, input_length=num_steps)(statement_input) #Train embeddings from scratch
-    lstm_in = LSTM(lstm_size,dropout=0.25)(x)
+    # x = Embedding(vocab_length+1,EMBEDDING_DIM,weights=[embedding_matrix],input_length=num_steps,trainable=False)(statement_input) #Preloaded glove embeddings
+    # # x = Embedding(output_dim=hidden_size, input_dim=vocab_length+1, input_length=num_steps)(statement_input) #Train embeddings from scratch
+    # lstm_in = LSTM(lstm_size,dropout=0.25)(x)
 
-    metadata_input = Input(shape=(X_train_meta.shape[1],), name="metadata_input")
-    counts_input = Input(shape=(X_train_counts.shape[1],), name="counts_input")
+    # metadata_input = Input(shape=(X_train_meta.shape[1],), name="metadata_input")
+    # counts_input = Input(shape=(X_train_counts.shape[1],), name="counts_input")
 
-    x_meta = Dense(64, activation="relu")(metadata_input)
-    x_counts = Dense(64, activation="relu")(counts_input)
+    # x_meta = Dense(64, activation="relu")(metadata_input)
+    # x_counts = Dense(64, activation="relu")(counts_input)
 
-    x_fc = keras.layers.concatenate([lstm_in, metadata_input, counts_input])
-    main_output = Dense(NUM_CLASSES, activation="softmax", name="main_output")(x_fc)
+    # x_fc = keras.layers.concatenate([lstm_in, metadata_input, counts_input])
+    # main_output = Dense(NUM_CLASSES, activation="softmax", name="main_output")(x_fc)
     
-    model = Model(inputs=[statement_input, metadata_input, counts_input], outputs=[main_output])
+    # model = Model(inputs=[statement_input, metadata_input, counts_input], outputs=[main_output])
 
     ###########################
     # CNN Model             
     ###########################
 
-    # # Hyperparameters for CNN.
-    # kernel_sizes = [2,5,8]
-    # filter_size = 128
+    # Hyperparameters for CNN.
+    kernel_sizes = [2,5,8]
+    filter_size = 128
 
-    # # Statement input.    
-    # statement_input = Input(shape=(num_steps,), dtype="int32", name="statement_input")
+    # Statement input.    
+    statement_input = Input(shape=(num_steps,), dtype="int32", name="statement_input")
     
-    # # Metadata input.
-    # #x = Embedding(vocab_length+1,EMBEDDING_DIM,weights=[embedding_matrix],input_length=num_steps,trainable=False)(statement_input) #Preloaded glove embeddings
-    # x = Embedding(output_dim=hidden_size, input_dim=vocab_length+1, input_length=num_steps)(statement_input) #Train embeddings from scratch
+    # Metadata input.
+    #x = Embedding(vocab_length+1,EMBEDDING_DIM,weights=[embedding_matrix],input_length=num_steps,trainable=False)(statement_input) #Preloaded glove embeddings
+    x = Embedding(output_dim=hidden_size, input_dim=vocab_length+1, input_length=num_steps)(statement_input) #Train embeddings from scratch
 
-    # kernel_arr = []
-    # for kernel in kernel_sizes:
-    #     x_1 = Conv1D(filters=filter_size,kernel_size=kernel)(x)
-    #     x_1 = GlobalMaxPool1D()(x_1)
-    #     kernel_arr.append(x_1)
-    # conv_in = keras.layers.concatenate(kernel_arr)
-    # conv_in = Dropout(0.6)(conv_in)
-    # conv_in = Dense(128, activation="relu")(conv_in)
+    kernel_arr = []
+    for kernel in kernel_sizes:
+        x_1 = Conv1D(filters=filter_size,kernel_size=kernel)(x)
+        x_1 = GlobalMaxPool1D()(x_1)
+        kernel_arr.append(x_1)
+    conv_in = keras.layers.concatenate(kernel_arr)
+    conv_in = Dropout(0.6)(conv_in)
+    conv_in = Dense(128, activation="relu")(conv_in)
     
-    # metadata_input = Input(shape=(X_train_meta.shape[1],), name="metadata_input")
-    # counts_input = Input(shape=(X_train_counts.shape[1],), name="counts_input")
+    metadata_input = Input(shape=(X_train_meta.shape[1],), name="metadata_input")
+    counts_input = Input(shape=(X_train_counts.shape[1],), name="counts_input")
 
-    # # Add in metadata and counts before fully-connected layer.
-    # x_meta = Dense(64, activation="relu")(metadata_input)
-    # x_counts = Dense(64, activation="relu")(counts_input)
+    # Add in metadata and counts before fully-connected layer.
+    x_meta = Dense(64, activation="relu")(metadata_input)
+    x_counts = Dense(64, activation="relu")(counts_input)
     
-    # # Output.
-    # x_fc = keras.layers.concatenate([conv_in, x_meta, x_counts])
-    # main_output = Dense(NUM_CLASSES, activation="softmax", name="main_output")(x_fc)
+    # Output.
+    x_fc = keras.layers.concatenate([conv_in, x_meta, x_counts])
+    main_output = Dense(NUM_CLASSES, activation="softmax", name="main_output")(x_fc)
     
-    # model = Model(inputs=[statement_input, metadata_input, counts_input], outputs=[main_output])
+    model = Model(inputs=[statement_input, metadata_input, counts_input], outputs=[main_output])
 
     ###########################
     # Visualize Models
     ###########################
 
     #Visualize model
-    plot_model(model, to_file="model_lstm.svg", show_shapes=True, show_layer_names=True)
+    # plot_model(model, to_file="model_lstm.svg", show_shapes=True, show_layer_names=True)
+    plot_model(model, to_file="model_cnn.svg", show_shapes=True, show_layer_names=True)
     #from IPython.display import SVG
     #from keras.utils.vis_utils import model_to_dot
     #SVG(model_to_dot(model,show_shapes=True).create(prog="dot", format="svg"))
@@ -442,7 +453,7 @@ def run(train_file, valid_file, test_file, output_file):
     print("="*20 + " Training Phase " + "="*20)
     print()
 
-    learning_rate = 0.025
+    learning_rate = 0.010 # 0.025
     clip_value = 0.3
     
     #Compile model and print summary
@@ -475,7 +486,7 @@ def run(train_file, valid_file, test_file, output_file):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig("lstm_accuracy_curves.png", format = 'png')
+    plt.savefig("cnn_accuracy_curves.png", format = 'png')
     plt.close()
 
     # Plot training & validation loss values
@@ -485,7 +496,7 @@ def run(train_file, valid_file, test_file, output_file):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.savefig("lstm_loss_curves.png", format = 'png')
+    plt.savefig("cnn_loss_curves.png", format = 'png')
     plt.close()
 
     print("Model trained.")
