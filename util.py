@@ -257,11 +257,11 @@ def raw_to_numeric_features(raw_X, model):
 def convert_labels(y, mode=MODE):
     assert mode in MODES
     if mode == BINARY:
-        return np.array([LABEL_TO_INT[z] // 3 for z in y])
+        return np.array([LABEL_TO_INT[z.lower()] // 3 for z in y])
     elif mode == HEXARY:
-        return np.array([LABEL_TO_INT[z] for z in y])
+        return np.array([LABEL_TO_INT[z.lower()] for z in y])
     elif mode == REGRESS:
-        return np.array([LABEL_TO_INT[z] / 5.0 for z in y])
+        return np.array([LABEL_TO_INT[z.lower()] / 5.0 for z in y])
 
 # Return a random batch.
 def get_batch(X, y, batch_size=1, replace=True):
