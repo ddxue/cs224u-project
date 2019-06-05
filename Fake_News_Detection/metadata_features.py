@@ -7,7 +7,7 @@ COLUMNS_NAMES = ["id",
 
 # Map output label to six classes.
 LABEL_LIST_REVERSE = ["pants-fire", "false", "barely-true", "half-true", "mostly-true", "true"]
-LABEL_DICT = {"pants-fire":0, "false":0, "barely-true":0, "half-true":1, "mostly-true":1, "true":1}
+LABEL_DICT = {"pants-fire":0, "false":0, "barely-true":1, "half-true":1, "mostly-true":1, "true":1}
 SPEAKERS_LIST = ["barack-obama", "donald-trump", "hillary-clinton", "mitt-romney", 
             "scott-walker", "john-mccain", "rick-perry", "chain-email", 
             "marco-rubio", "rick-scott", "ted-cruz", "bernie-s", "chris-christie", 
@@ -192,3 +192,7 @@ def map_subject(subject):
             return 13 # This maps any other subject to index 13
     else:
         return 13 # Nans or un-string data goes here.
+
+def map_label(label):
+    label = label.lower()
+    return LABEL_DICT[label]
