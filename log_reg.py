@@ -151,8 +151,10 @@ def quality_analysis(mode=BINARY, have_indices=False, load_from_cache=False):
         print_example(raw_val_X, val_y, i)
 
 def print_example(X, y, i):
-    print(X[i])
+    std = standardized_features(X[i], mode='bin')
+    print("{} || {} || {}".format(std[0],std[1],std[2][-2:]))
     print(y[i])
+    print()
 
 def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2', mode=HEXARY):
     print("Fitting Model...")

@@ -166,15 +166,19 @@ def make_one_hot(index, maximum):
 # Reputation Score(s)
 # TODO: play with this!
 ############################
-def reputation_vec(statement_counts):
+def reputation_vec(statement_counts, mode='all'):
     assert len(statement_counts) == 5
     x = np.array(statement_counts)
     false_counts = np.array([x[0] + x[1] + x[4]])
     true_counts = np.array([x[2] + x[3]])
 
-    if np.sum(x) == 0:
-        return np.ones(5) / 5
-    return x / np.sum(x)
+    if mode == 'all':
+        if np.sum(x) == 0:
+            return np.ones(5) / 5
+        return x / np.sum(x)
+    else:
+        y = [float(true_counts), float(false_counts)]
+        return y / np.sum(y)
 
 ##################################
 # FOR STANDARDIZING ACROSS MODELS,
@@ -183,7 +187,7 @@ def reputation_vec(statement_counts):
 
 # Take a single data point and return
 # [original statement, venue, np.array(other contextual features)]
-def standardized_features(x):
+def standardized_features(x, mode='all'):
     assert len(x) == 12
     features = []
     # Add original statement
@@ -204,7 +208,7 @@ def standardized_features(x):
     # Counts of the statements
     statement_counts = x[6:11]
     contextual_features = np.concatenate((contextual_features, 
-        reputation_vec(statement_counts)))
+        reputation_vec(statement_counts, mode=mode)))
     features.append(contextual_features)
 
     return features
