@@ -2,7 +2,9 @@ from util import *
 from sklearn.linear_model import LogisticRegression
 
 class ValConf():
-    def __init__(self, param_names, params, train_conf, train_f1, train_acc, val_conf, val_f1, val_acc):
+    def __init__(self, param_names, params, 
+        train_conf, train_f1, train_acc, 
+        val_conf, val_f1, val_acc, yhat):
         self.param_names = param_names
         self.params = params
         self.train_conf = train_conf
@@ -11,6 +13,7 @@ class ValConf():
         self.val_conf = val_conf
         self.val_f1 = val_f1
         self.val_acc = val_acc
+        self.yhat = yhat
 
     def __str__(self):
         #tex = str(self.train_f1) + ' & ' + str(self.train_acc) + ' & ' + str(self.val_f1) + ' & ' + str(self.val_acc)
@@ -40,16 +43,12 @@ def hyperparam_search(mode=HEXARY):
             for C in [10, 1, 0.1]:
                 val_results.append(get_results(train_X, train_y, val_X, val_y, 
                     normalize=normalize, C=C, reg=reg, mode=mode))
-
     print("Summary of results")
     best_result = val_results[0]
     for val_result in val_results:
         print(val_result)
         if val_result.val_f1 > best_result.val_f1:
             best_result = val_result
-
-    print("Best result:")
-    print(best_result)
 
 def ablation_study(mode=BINARY):
     model = Sentence2Vec(MODEL_FILENAME)
@@ -106,6 +105,55 @@ def ablation_study(mode=BINARY):
         if val_result.val_f1 > best_result.val_f1:
             best_result = val_result
 
+
+def quality_analysis(mode=BINARY, have_indices=False, load_from_cache=False):
+    if not have_indices:
+        model = Sentence2Vec(MODEL_FILENAME)
+        val_results = []
+        train_X, train_y, val_X, val_y, test_X, test_y \
+            = load_all_data(model, 
+                normalize=False, 
+                load_from_cache=load_from_cache, # CHECK THIS!
+                mode=mode)
+
+        # Hardcoded best settings from hyperparam search
+        # Both had normalize=False and reg='l1'
+        C = (10 if mode == BINARY else 0.1)
+
+        langs = [True, False]
+        for lang in langs:
+            print("Lang: {}".format(lang))
+            if lang:
+                mod_train_X, mod_val_X = train_X, val_X
+            else:
+                mod_train_X, mod_val_X = train_X[:,200:], val_X[:,200:]
+                
+            val_results.append(get_results(mod_train_X, train_y, mod_val_X, val_y, 
+                normalize=False, C=C, reg='l1', mode=mode))
+
+        yhat_all = val_results[0].yhat
+        yhat_meta_only = val_results[1].yhat
+        y = val_y
+        evaluate(y, yhat_all)
+        evaluate(y, yhat_meta_only)
+
+        indices = []
+        for i in range(len(y)):
+            if y[i] == yhat_meta_only[i] and y[i] != yhat_all[i]:
+                indices.append(i)
+        print(indices)
+        print(len(indices))
+    else:
+        indices = [9, 14, 29, 38, 68, 172, 206, 211, 223, 320, 422, 437, 477, 490, 527, 557, 590, 610, 674, 677, 707, 740, 855, 881, 887, 911, 919, 923, 930, 969, 1022, 1026, 1036, 1089, 1176, 1182, 1199]
+
+    raw_val_X, val_y = load_raw_data(VALID_FILENAME)
+    for i in indices:
+        print_example(raw_val_X, val_y, i)
+
+def print_example(X, y, i):
+    print(X[i])
+    print(y[i])
+
 def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2', mode=HEXARY):
     print("Fitting Model...")
     log_reg = LogisticRegression(C=C, 
@@ -124,8 +172,9 @@ def get_results(train_X, train_y, val_X, val_y, normalize=False, C=1, reg='l2', 
     return ValConf(['normalize', 'C', 'reg'], 
         [normalize, C, reg], 
         train_conf, train_f1, train_acc, 
-        val_conf, val_f1, val_acc)
+        val_conf, val_f1, val_acc, val_yhat)
 
 if __name__ == '__main__':
     #hyperparam_search(mode=HEXARY)
-    ablation_study(mode=BINARY)
+    #ablation_study(mode=BINARY)
+    quality_analysis(mode=BINARY, have_indices=True, load_from_cache=True)
