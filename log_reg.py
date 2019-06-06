@@ -55,15 +55,29 @@ def ablation_study(mode=BINARY):
     model = Sentence2Vec(MODEL_FILENAME)
     val_results = []
     train_X, train_y, val_X, val_y, test_X, test_y \
-        = load_all_data(model, normalize=False, mode=mode)
-    # print(np.mean(val_y))
+        = load_all_data(model, 
+            normalize=False, 
+            # load_from_cache=True, 
+            mode=mode)
+    
+    # For F1/acc baseline majority
+    # evaluate(val_y, np.ones(len(val_y)), mode=BINARY)
+    
     # Hardcoded best settings from hyperparam search
     # Both had normalize=False and reg='l1'
     C = (10 if mode == BINARY else 0.1)
+
+    langs = [True, False]
+    cons = [True, False]
+    reps = [True, False]
+
+    # langs = [False]
+    # cons = [True]
+    # reps = [True]
     
-    for lang in [True, False]:
-        for con in [True, False]:
-            for rep in [True, False]:
+    for lang in langs:
+        for con in cons:
+            for rep in reps:
                 print("Lang: {}, Con: {}, Rep: {}".format(lang, con, rep))
                 if lang or con or rep:
                     if lang and con and rep:

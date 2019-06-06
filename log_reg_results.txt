@@ -1,3 +1,21 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Summary of results
 normalize: True C: 0.1 reg: l1 || train f1: 0.7278 train acc: 0.7359 val f1: 0.7091 val acc: 0.7126
 normalize: True C: 0.1 reg: l2 || train f1: 0.7342 train acc: 0.7419 val f1: 0.7085 val acc: 0.7118
